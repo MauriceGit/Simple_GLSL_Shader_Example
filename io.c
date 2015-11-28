@@ -2,7 +2,8 @@
  * @author Maurice Tollmien. Github: MauriceGit
  */
 
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include <GL/glut.h>
 
 /* ---- System Header einbinden ---- */
 #include <stdio.h>
@@ -18,7 +19,7 @@
 #include "logic.h"
 #include "vector.h"
 #include "imageLoader.h"
-
+#include "stringOutput.h"
 
 /* Shader-ID's */
 GLuint G_ShaderColor, G_ShaderTexture, G_ShaderPosColor;
@@ -43,13 +44,12 @@ int G_Width = 1920;
 int G_Height = 1080;
 int G_FullScreen = 1;
 char* G_WindowTitle = "";
-GLFWwindow * G_Window = NULL;
 float G_Interval = 0;
 float G_ThisCallTime = 0;
 
 int G_FPS_Count = 0;
 double G_FPS_All = 0;
-
+int G_Help = 0;
 
 GLfloat G_Objects[] = {
     -10.0, -10.0, -10.0, 	0.1, 0.0,
@@ -67,23 +67,22 @@ GLfloat G_Objects[] = {
  * @param lastCallTime Zeitpunkt, zu dem die Funktion als Timer-Funktion
  *   registriert wurde (In).
  */
-double cbTimer (int lastCallTime)
+void cbTimer (int lastCallTime)
 {
-    /* Seit dem Programmstart vergangene Zeit in Sekunden */
-    G_Interval = glfwGetTime();
-    glfwSetTime(0.0);
     
-    G_FPS_Count++;
-    G_FPS_All += G_Interval;
+    /* Seit dem Programmstart vergangene Zeit in Millisekunden */
+	int thisCallTime = glutGet (GLUT_ELAPSED_TIME);
     
-    if (G_FPS_Count >= 1000) {
-        //printf ("fps: %i\n", (int) (1.0 / ((double)G_FPS_All / (double)G_FPS_Count)));
-        G_FPS_All = 0.0;
-        G_FPS_Count = 0;
-    }
-    
-    calcTimeRelatedStuff(G_Interval);
-    return G_Interval;
+	/* Seit dem letzten Funktionsaufruf vergangene Zeit in Sekunden */
+	double interval = (double) (thisCallTime - lastCallTime) / 1000.0f;
+		
+	calcTimeRelatedStuff(interval);
+			
+	/* Wieder als Timer-Funktion registrieren */
+	glutTimerFunc (1000 / TIMER_CALLS_PS, cbTimer, thisCallTime);
+
+	/* Neuzeichnen anstossen */
+	glutPostRedisplay ();
 }
 
 /**
@@ -266,11 +265,31 @@ static void drawTexturedQuad(GLuint shader) {
 }
 
 /**
+ * Wird aufgerufen, wenn "h" gedrückt worden ist.
+ * Gibt einen Text auf einem schwarzen Hintergrund auf dem Bildschirm aus
+ */
+void printHelp (void)
+{
+    /* Textfarbe */
+    GLfloat textColor[3] = { 1.0f, 0.5f, 0.5f };
+
+    drawString (0.2f, 0.1f, textColor, HELP_OUTPUT_1);
+    drawString (0.2f, 0.125f, textColor, HELP_OUTPUT_2);
+    drawString (0.2f, 0.148f, textColor, HELP_OUTPUT_3);
+    drawString (0.2f, 0.171f, textColor, HELP_OUTPUT_4);
+    drawString (0.2f, 0.194f, textColor, HELP_OUTPUT_5);
+    drawString (0.2f, 0.217f, textColor, HELP_OUTPUT_6);
+    drawString (0.2f, 0.240f, textColor, HELP_OUTPUT_7);
+    drawString (0.2f, 0.263f, textColor, HELP_OUTPUT_8);
+
+}
+
+/**
  * Zeichen-Callback.
  * Loescht die Buffer, ruft das Zeichnen der Szene auf und tauscht den Front-
  * und Backbuffer.
  */
-static void cbDisplay (GLFWwindow * window)
+static void cbDisplay ()
 {
     int i;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -291,50 +310,27 @@ static void cbDisplay (GLFWwindow * window)
          0.0, 0.0, 0.0,
          0.0, 1.0, 0.0);
     
-	switch(G_ShowTexture) {
-		case 0:
-			drawTexturedQuad(G_ShaderTexture);
-			break;
-		case 1:
-			drawColoredQuad(G_ShaderColor, 0, 0, 1);
-			break;
-		case 2:
-			drawPosColoredQuad(G_ShaderPosColor);
-			break;
+	if (!G_Help) {	
+		switch(G_ShowTexture) {
+			case 1:
+				drawTexturedQuad(G_ShaderTexture);
+				break;
+			case 0:
+				drawColoredQuad(G_ShaderColor, 0, 0, 1);
+				break;
+			case 2:
+				drawPosColoredQuad(G_ShaderPosColor);
+				break;
+		}
+	} else {
+		printHelp();
 	}
     
-    /* fuer DoubleBuffering */
-    glfwSwapBuffers(window);
+    glutSwapBuffers ();
     
-    glfwSwapInterval(0);
 }
 
 
-
-/**
- * Geht in den Windowed/Fullscreen-Mode.
- */
-int createWindow(void)
-{
-    if (G_Window)
-        glfwDestroyWindow(G_Window);
-        
-    glfwDefaultWindowHints();
-    
-    if (G_FullScreen)
-        G_Window = glfwCreateWindow(1920, 1080, G_WindowTitle, glfwGetPrimaryMonitor(), NULL);
-    else
-        G_Window = glfwCreateWindow(G_Width, G_Height, G_WindowTitle, NULL, NULL);
-    
-    if (G_Window) {
-        glfwMakeContextCurrent(G_Window);
-        glfwGetFramebufferSize(G_Window, &G_Width, &G_Height);
-    } else {
-        return 0;
-    }
-    
-    return 1;
-}
 
 /**
  * Callback fuer Tastendruck.
@@ -343,104 +339,71 @@ int createWindow(void)
  * @param x x-Position der Maus zur Zeit des Tastendrucks (In).
  * @param y y-Position der Maus zur Zeit des Tastendrucks (In).
  */
-void cbKeyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
+void cbKeyboard (unsigned char key, int x, int y)
 {
-    if (action == GLFW_PRESS) {
-        switch (key)
-        {
-            case 'q':
-            case 'Q':
-            case GLFW_KEY_ESCAPE:
-                glfwSetWindowShouldClose(window, GL_TRUE);
-                break;
-            case GLFW_KEY_R:
-                break;
-            case GLFW_KEY_H:
-                break;
-            case 'n':
-            case 'N':
-                break;
-            case 'w':
-            case 'W':
-                break;
-            case 'f':
-            case 'F':
-                /*G_FullScreen = !G_FullScreen;
-                createWindow();
-                registerCallBacks (G_Window);
-                mainLoop (G_Window);*/
-                break;
-            case 's':
-            case 'S':
-				G_ShowTexture = (G_ShowTexture + 1) % 3;
-                break;    
-            case 'k':
-            case 'K':
-                break;   
-            case 'v':
-            case 'V':
-                break;
-            case GLFW_KEY_UP:
-                setKey (1, 1);
-                break;
-            case GLFW_KEY_DOWN:
-                setKey(0,1);
-                break;
-            case GLFW_KEY_F1:
-                toggleWireframeMode();
-                break;
-        }           
-    }
-    
-    if (action == GLFW_RELEASE) {
-        
-        switch (key)
-        {
-            case GLFW_KEY_LEFT: 
-
-                break;
-            case GLFW_KEY_RIGHT:
-
-                break;
-            case GLFW_KEY_UP:
-                setKey (1,0);
-                break;
-            case GLFW_KEY_DOWN:
-                setKey (0,0);
-                break;
-        }
-    }
+	switch (key)
+	{
+		case 'q':
+		case 'Q':
+		case ESC:
+			exit(0);
+			break;_H:
+			break;
+		case 'h':
+		case 'H':
+			G_Help = !G_Help;
+			break;
+		case 's':
+		case 'S':
+			G_ShowTexture = (G_ShowTexture + 1) % 3;
+			break;    
+		
+	}
     
 }
 
-/**
- * Mouse-Button-Callback.
- * @param button Taste, die den Callback ausgeloest hat.
- * @param state Status der Taste, die den Callback ausgeloest hat.
- * @param x X-Position des Mauszeigers beim Ausloesen des Callbacks.
- * @param y Y-Position des Mauszeigers beim Ausloesen des Callbacks.
- */
-void cbMouseButton(GLFWwindow* window, int button, int action, int mods)
+void cbSpecial (int key, int x, int y)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+	switch (key)
+	{
+		case GLUT_KEY_F1:
+            toggleWireframeMode();
+			break;
         
-        if (action == GLFW_RELEASE) 
-            setMouseState(NONE);
-        else
-            setMouseState(MOVE);
-        
-    }
-    
-    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-        
-        if (action == GLFW_RELEASE) 
-            setMouseState(NONE);
-        else
-            setMouseState(ZOOM);
-    }
+	}
 }
 
-static void cbMouseMotion (GLFWwindow* window, double x, double y)
+void
+handleMouseEvent (int x, int y, CGMouseEventType eventType, int button, int buttonState)
+{
+    switch (eventType)
+    {
+        case mouseButton:
+            switch (button)
+            {
+                case GLUT_LEFT_BUTTON:
+                    setMouseEvent(MOVE,x,y);
+                break;
+                case GLUT_RIGHT_BUTTON:
+                    setMouseEvent(ZOOM,x,y);
+                break;
+                default:
+                  break;
+            }
+        break;
+        default:
+          break;
+    }
+    if (buttonState)
+        setMouseEvent(NONE,x,y);
+}
+
+void cbMouseButton (int button, int state, int x, int y)
+{
+	handleMouseEvent (x, y, mouseButton, button, state);
+}
+
+void cbMouseMotion (int x, int y)
 {    
     if (getMouseEvent() == MOVE)
         setCameraMovement(x,y);
@@ -458,7 +421,7 @@ static void cbMouseMotion (GLFWwindow* window, double x, double y)
  * @param w Fensterbreite (In).
  * @param h Fensterhoehe (In).
  */
-void cbReshape (GLFWwindow* window, int w, int h)
+void cbReshape (int w, int h)
 {
   /* Das ganze Fenster ist GL-Anzeigebereich */
   glViewport (0, 0, (GLsizei) w, (GLsizei) h);
@@ -467,29 +430,32 @@ void cbReshape (GLFWwindow* window, int w, int h)
   setProjection ((GLdouble) w / (GLdouble) h);
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    
-    printf ("Key Callback with: key: [%d], scancode: [%d], action: [%d], mods: [%d]\n", key, scancode, action, mods);
-}
+
 
 /**
  * Registrierung der GLUT-Callback-Routinen.
  */
-void registerCallBacks (GLFWwindow * window)
+void registerCallBacks (void)
 {
+	
+    glutMotionFunc(cbMouseMotion);
+    glutMouseFunc (cbMouseButton);
     
-    /* Reshape-Callback - wird ausgefuehrt, wenn neu gezeichnet wird (z.B. nach
-    * Erzeugen oder Groessenaenderungen des Fensters) */
-    glfwSetFramebufferSizeCallback (window, cbReshape);
+    /* Timer-Callback - wird einmalig nach msescs Millisekunden ausgefuehrt */
+	glutTimerFunc (1000 / TIMER_CALLS_PS, /* msecs - bis Aufruf von func */
+                 cbTimer,       /* func  - wird aufgerufen    */
+                 glutGet (GLUT_ELAPSED_TIME));  /* value - Parameter, mit dem
+                                                   func aufgerufen wird */
     
-    glfwSetKeyCallback (window, cbKeyboard);
+    glutReshapeFunc (cbReshape);
+    glutDisplayFunc (cbDisplay);
     
-    glfwSetCursorPosCallback (window, cbMouseMotion);
+    glutKeyboardFunc (cbKeyboard);
+    glutSpecialFunc (cbSpecial);
     
-    glfwSetMouseButtonCallback (window, cbMouseButton);
+    glutIgnoreKeyRepeat (1);
+    
+    
 }
 
 int readFile (char * name, GLchar ** buffer) {
@@ -565,24 +531,6 @@ GLuint loadShaders(char * vertexShader, char * fragmentShader){
     return ProgramID;
 }
 
-/**
- * Selbstgemachter Main-Loop mit Callback, ob das Fenster geschlossen werden soll.
- */
-void mainLoop (GLFWwindow * window)
-{
-    double lastCallTime = cbTimer(0.0);
-    
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    
-    while (!glfwWindowShouldClose(window))
-    {
-        cbDisplay (window);
-        lastCallTime = cbTimer (lastCallTime);
-        glfwPollEvents();
-    }
-    
-}
-
 int loadTextureImage(Image * image, char * name, GLuint * tex) {
 	
 	if (!imageLoad(name, image)) 
@@ -611,24 +559,36 @@ int loadTextureImage(Image * image, char * name, GLuint * tex) {
  */
 int initAndStartIO (char *title, int width, int height)
 {
+	int windowID = 0;
         
     G_Width = width;
     G_Height = height;
     G_WindowTitle = title;
-    G_FullScreen = 0;
+    int argc = 1;
+	char *argv = "cmd";
     
-    if (!glfwInit())
-        return 0;
-
-    if (createWindow())
+	/* Glut initialisieren */
+	glutInit (&argc, &argv);
+	
+	/* FensterInitialisierung */
+	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	/* FensterGröße */
+	glutInitWindowSize (G_Width, G_Height);
+	/* FensterPosition */
+	glutInitWindowPosition (0, 0);
+	
+	windowID = glutCreateWindow (G_WindowTitle);
+	
+    if (windowID)
     {   
-        
         
         /* Hintergrund und so werden initialisiert (Farben) */
         if (initScene ())
         {
             int i;
             printf ("--> Shader laden...\n"); fflush(stdout);
+            
+            registerCallBacks ();
             
             /*
              * Shader aus Datei laden!
@@ -654,23 +614,21 @@ int initAndStartIO (char *title, int width, int height)
             glBufferData(GL_ARRAY_BUFFER, sizeof(G_Objects)*sizeof(GLfloat), G_Objects, GL_STATIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
             
-            registerCallBacks (G_Window);
-                
             printf ("--> Initialisierung angeschlossen.\n"); fflush(stdout);
             
             /* Die Endlosschleife wird angestoßen */
-            mainLoop (G_Window);
+            glutMainLoop ();
+            windowID = 0;
             
             
         } else {
-            glfwDestroyWindow(G_Window);
+            glutDestroyWindow (windowID);
             return 0;
         }
     } else {
         return 0;
     }
-    
-    glfwDestroyWindow(G_Window);
+    glutDestroyWindow (windowID);
     
     return 1;
 }

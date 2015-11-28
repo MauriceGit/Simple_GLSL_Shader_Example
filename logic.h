@@ -12,6 +12,7 @@
 
 /* ------- GETTER / SETTER ------- */
 void setMouseState(MouseInterpretType state);
+void setMouseEvent(MouseInterpretType state,int x, int y);
 void setMouseCoord(int x, int y);
 MouseInterpretType getMouseEvent(void);
 double getCameraPosition (int axis);

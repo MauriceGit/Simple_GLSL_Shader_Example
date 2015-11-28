@@ -12,7 +12,6 @@
 #include <stdarg.h>
 
 int initAndStartIO (char *title, int width, int height);
-void registerCallBacks (GLFWwindow * window);
-void mainLoop (GLFWwindow * window);
+void registerCallBacks ();
 
 #endif

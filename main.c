@@ -9,20 +9,13 @@
 #include <stdarg.h>
 #include <time.h>
 
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
+#include <GL/glut.h>
 
 /* ---- Eigene Header einbinden ---- */
 #include "io.h"
 #include "scene.h" 
 #include "types.h"
-
-/**
- * Error-Callback-Funktion mit Print des Fehlers.
- */
-static void error_callback(int error, const char* description)
-{
-    fputs(description, stderr);
-}
 
 /**
  * Hauptprogramm.
@@ -36,16 +29,11 @@ main (int argc, char **argv)
 {
 	srand (time (0));
 	
-	glfwSetErrorCallback(error_callback);
-	
-	if (!initAndStartIO ("lots and lots of particles ... yeay ... :-)", 1920, 1080))
+	if (!initAndStartIO ("Much shader such wow ... ", 1920, 1080))
 	{
 		fprintf (stderr, "Initialisierung fehlgeschlagen!\n");
-		glfwTerminate();
 		return 1;
 	} 
-	
-	glfwTerminate();
 	
 	return 0;
 }

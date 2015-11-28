@@ -32,24 +32,11 @@ CGVector3D G_LastMouseCenter = {0.0,0.0,0.0};
 /** FPS */
 int G_FPS = 0;
 /** Partikel hinzufügen? */
-int G_UpDownKeys[2] = {0,0};
 /** FPS counter */
 double G_Counter = 0.0-EPS;
 
 
 /* ------- GETTER / SETTER ------- */
-
-/**
- * Setzt, ob ein Up/Down-Key gedrückt ist.
- * key == 0 = down
- * key == 1 = up
- * value = gesetzt/nicht gesetzt.
- */
-void setKey (int key, int value)
-{
-    if (key < 2)
-        G_UpDownKeys[key] = value;
-}
 
 /**
  * Mouse Status.
@@ -63,6 +50,21 @@ void setMouseCoord(int x, int y) {
 	G_LastMouseCenter[2] = y;
 }
 
+
+/**
+ * Set-Function für den Status der Maus
+ * @param Status der Maus
+ */
+void setMouseEvent(MouseInterpretType state,int x, int y) {
+    G_MouseMove[0] = 0.0;
+    G_MouseMove[2] = 0.0;
+    G_LastMouseCenter[0] = x;
+    G_LastMouseCenter[2] = y;
+    
+    
+    G_Mouse = state;
+}
+
 /**
  * Get-Function für den Status der Maus
  * @return Status der Maus
@@ -70,6 +72,7 @@ void setMouseCoord(int x, int y) {
 MouseInterpretType getMouseEvent() {
     return G_Mouse;
 }
+
 
 /**
  * Gibt die Kamerakoordinate zurück.

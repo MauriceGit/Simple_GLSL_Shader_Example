@@ -51,6 +51,23 @@
 /** Keyboardtaste SPACE definieren */
 #define SPACE   32
 
+/* Text */
+/** Textausgabe, wenn das SPIEel zu ende ist, weil kein Stein mehr verfuegbar ist */
+#define HELP_OUTPUT_1       "====== U'r blinded by pure AWESOMENESS!!!!! ======"
+#define HELP_OUTPUT_2       "|________________________________________________|"
+#define HELP_OUTPUT_3       "q/Q    Beendet die Demo."
+#define HELP_OUTPUT_4       "s      Wechselt zwischen den verschiedenen Textur-Modi"
+#define HELP_OUTPUT_5       "h/H    Oeffnet/schliesst den Hilfemodus."
+#define HELP_OUTPUT_6       "f1     Wireframe an/aus."
+#define HELP_OUTPUT_7       "Maus + rechte Maustaste    Abstand zum Mittelpunkt."
+#define HELP_OUTPUT_8       "Maus + linke Maustaste     Bewegung im Raum."
+
+/** Mausereignisse. */
+enum e_MouseEventType
+{ mouseButton, mouseMotion, mousePassiveMotion };
+/** Datentyp fuer Mausereignisse. */
+typedef enum e_MouseEventType CGMouseEventType;
+
 /** Mausereignisse. */
 enum e_MouseInterpretType
 { NONE, MOVE, ZOOM};
