@@ -70,7 +70,7 @@ GLfloat G_Objects[] = {
 void printHelp (void)
 {
     /* Textfarbe */
-    GLfloat textColor[3] = { 1.0f, 0.5f, 0.5f };
+    GLfloat textColor[3] = { 0.0f, 0.0f, 0.0f };
 
     drawString (0.2f, 0.1f, textColor, HELP_OUTPUT_1);
     drawString (0.2f, 0.125f, textColor, HELP_OUTPUT_2);
