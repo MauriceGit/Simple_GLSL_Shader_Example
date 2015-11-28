@@ -21,7 +21,8 @@ gcc -I./ -c -o logic.o logic.c
 
 # link
 echo "linking source object and image loader object files . . ."
-gcc -L/usr/X11R6/lib64 vector.o stringOutput.o imageLoader.o main.o scene.o io.o logic.o -lz `pkg-config glfw3 --static --cflags --libs` -o "$programName" -lglut -lGLU -lGL
+#gcc vector.o stringOutput.o imageLoader.o main.o scene.o io.o logic.o -lz  -o "$programName" -lglut -lGLU -lGL
+gcc  -L/lib -L/usr/X11R6/lib64 vector.o imageLoader.o main.o scene.o io.o logic.o stringOutput.o -lm -lglut -lGLU -lGL  -lz -o shaderDemo
 
 rm -rf *.o 2>/dev/null
 
