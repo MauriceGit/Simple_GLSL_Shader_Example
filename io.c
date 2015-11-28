@@ -22,7 +22,7 @@
 #include "stringOutput.h"
 
 /* Shader-ID's */
-GLuint G_ShaderColor, G_ShaderTexture, G_ShaderPosColor;
+GLuint G_ShaderColor, G_ShaderTexture, G_ShaderPosColor, G_ShaderDepthTexture;
 
 /* Shader-Variablen */
 GLuint G_Velocity_buffer_loc, G_Position_buffer_loc;
@@ -34,11 +34,14 @@ GLuint G_Position_buffer_tex, G_Velocity_buffer_tex;
 GLuint G_ObjectsBuffer, G_Compute_Buffers, G_Position_buffer, G_Velocity_buffer, G_Attractor_buffer, G_AttractorMass_buffer, G_Life_buffer;
 
 /* Textur */
-GLuint G_TexImageRocks;
+GLuint G_TexImageRocks, G_TexCamera, G_TexCameraDepth;
+
+/* Framebuffer-Objekte */
+GLuint G_fboCam;
 
 GLuint G_Dispatch_buffer;
 
-int G_ShowTexture = 1;
+int G_ShowTexture = 0;
 
 int G_Width = 1920;
 int G_Height = 1080;
@@ -59,6 +62,54 @@ GLfloat G_Objects[] = {
      10.0,  10.0, -10.0,	1.0, 1.0,
     -10.0,  10.0, -10.0,	0.1, 1.0
 };
+
+/**
+ * Wird aufgerufen, wenn "h" gedrückt worden ist.
+ * Gibt einen Text auf einem schwarzen Hintergrund auf dem Bildschirm aus
+ */
+void printHelp (void)
+{
+    /* Textfarbe */
+    GLfloat textColor[3] = { 1.0f, 0.5f, 0.5f };
+
+    drawString (0.2f, 0.1f, textColor, HELP_OUTPUT_1);
+    drawString (0.2f, 0.125f, textColor, HELP_OUTPUT_2);
+    drawString (0.2f, 0.148f, textColor, HELP_OUTPUT_3);
+    drawString (0.2f, 0.171f, textColor, HELP_OUTPUT_4);
+    drawString (0.2f, 0.194f, textColor, HELP_OUTPUT_5);
+    drawString (0.2f, 0.217f, textColor, HELP_OUTPUT_6);
+    drawString (0.2f, 0.240f, textColor, HELP_OUTPUT_7);
+    drawString (0.2f, 0.263f, textColor, HELP_OUTPUT_8);
+
+}
+
+
+void tellThemKidsWhatsGoingOn(void) {
+	GLfloat textColor[3] = { 0.0f, 0.0f, 0.0f };
+	switch (G_ShowTexture) {
+		case 0:
+			drawString (0.2f, 0.1f, textColor, "Die Flaeche wird im Shader einfarbig eingefaerbt.");
+			break;
+		case 1:
+			drawString (0.2f, 0.1f, textColor,  "Die Position eines Vertices im Raum wird jeweils auf den Bereich 0..1 gemappt und ");
+			drawString (0.2f, 0.12f, textColor, "im Fragmentshader als Farb-Komponente verwendet. Quasi eine Visualisierung von Koordinaten.");
+			break;
+		case 2:
+			drawString (0.2f, 0.1f, textColor, "Eine Textur wird aus einer Bild-Datei geladen und im Shader auf die Flaeche gemappt.");
+			break;
+		case 3:
+			drawString (0.2f, 0.1f, textColor, "Die Szene mit der Bild-Textur wird in ein neues Framebufferobjekt gerendert, welche");
+			drawString (0.2f, 0.12f, textColor, "an eine Textur gebunden wird. Also wird quasi in eine Textur gerendert statt auf den ");
+			drawString (0.2f, 0.14f, textColor, "Bildschirm. Diese Textur aus der aktuellen Szene wird nun auf die Flaeche gemappt.");
+			break;
+		case 4:
+			drawString (0.2f, 0.1f, textColor, "Die Szene mit der Bild-Textur wird in ein neues Framebufferobjekt gerendert, in dem");
+			drawString (0.2f, 0.12f, textColor, "Fall aber nicht als normale Textur sondern als Tiefenmap der Szene aus Sicht der");
+			drawString (0.2f, 0.14f, textColor, "Kamera. Diese Tiefenmap wird im Fragmentshader normalisiert und als Grauwert betrachtet");
+			drawString (0.2f, 0.16f, textColor, "genutzt, um die jeweiligen Fragments entsprechend ihrer Tiefe in der Szene einzufaerben.");
+			break;
+	}
+}
 
 /**
  * Timer-Callback.
@@ -106,7 +157,7 @@ setProjection (GLdouble aspect)
       gluPerspective (90.0,     /* Oeffnungswinkel */
                       aspect,   /* Seitenverhaeltnis */
                       0.5,      /* nahe ClipPIEng-Ebene */
-                      10000.0 /* ferne ClipPIEng-Ebene */ );
+                      50.0 /* ferne ClipPIEng-Ebene */ );
   }
 }
 
@@ -208,7 +259,7 @@ static void drawPosColoredQuad(GLuint shader) {
     glEnable(GL_CULL_FACE);
 }
 
-static void drawTexturedQuad(GLuint shader) {
+static void drawTexturedQuad(GLuint shader, GLuint texture) {
     glDisable(GL_CULL_FACE);
     
     /*
@@ -232,7 +283,7 @@ static void drawTexturedQuad(GLuint shader) {
         
 		glEnable(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, G_TexImageRocks);
+		glBindTexture(GL_TEXTURE_2D, texture);
 		glUniform1i(glGetUniformLocation(shader, "texsampler"), 0);
         
         /* 
@@ -258,31 +309,73 @@ static void drawTexturedQuad(GLuint shader) {
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
+        glDisable(GL_TEXTURE_2D);
         
         glBindBuffer (GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glEnable(GL_CULL_FACE);
 }
 
-/**
- * Wird aufgerufen, wenn "h" gedrückt worden ist.
- * Gibt einen Text auf einem schwarzen Hintergrund auf dem Bildschirm aus
- */
-void printHelp (void)
-{
-    /* Textfarbe */
-    GLfloat textColor[3] = { 1.0f, 0.5f, 0.5f };
-
-    drawString (0.2f, 0.1f, textColor, HELP_OUTPUT_1);
-    drawString (0.2f, 0.125f, textColor, HELP_OUTPUT_2);
-    drawString (0.2f, 0.148f, textColor, HELP_OUTPUT_3);
-    drawString (0.2f, 0.171f, textColor, HELP_OUTPUT_4);
-    drawString (0.2f, 0.194f, textColor, HELP_OUTPUT_5);
-    drawString (0.2f, 0.217f, textColor, HELP_OUTPUT_6);
-    drawString (0.2f, 0.240f, textColor, HELP_OUTPUT_7);
-    drawString (0.2f, 0.263f, textColor, HELP_OUTPUT_8);
-
+void drawDemo(int renderToTexture) {
+	if (!G_Help) {	
+		if (!renderToTexture) {
+			switch(G_ShowTexture) {
+				case 0:
+					drawColoredQuad(G_ShaderColor, 0, 0, 1);
+					break;
+				case 1:
+					drawPosColoredQuad(G_ShaderPosColor);
+					break;
+				case 2:
+					drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
+					break;
+				case 3:
+					drawTexturedQuad(G_ShaderTexture, G_TexCamera);
+					break;
+				case 4:
+					drawTexturedQuad(G_ShaderDepthTexture, G_TexCameraDepth);
+					break;
+			}
+		} else {
+			drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
+		}
+		tellThemKidsWhatsGoingOn();
+	} else {
+		printHelp();
+	}
 }
+
+/**
+ * Rendert eine Szene nicht auf den Bildschirm sondern in eine Textur.
+ */
+void drawSceneToSpecificFramebuffer(GLuint fbo, int renderToTexture) {
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);	
+	if (renderToTexture) {
+		glClearColor(0.0, 0.8, 0.8, 0.0);
+	} else {
+		glClearColor(0.0, 1.0, 1.0, 0.0);
+	}
+	glClearDepth(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glDisable(GL_CULL_FACE);
+	glViewport (0, 0, G_Width, G_Height);	
+	setProjection ((double)G_Width/G_Height);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	gluLookAt (getCameraPosition(0), getCameraPosition(1), getCameraPosition(2),
+         0.0, 0.0, 0.0,
+         0.0, 1.0, 0.0);
+	
+	glDisable(GL_TEXTURE_2D);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+		printf ("Framebuffer ist nicht korrekt! 4\n");
+	}
+
+	drawDemo(renderToTexture);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}	
 
 /**
  * Zeichen-Callback.
@@ -291,43 +384,17 @@ void printHelp (void)
  */
 static void cbDisplay ()
 {
-    int i;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClearDepth(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_ONE, GL_ONE);
-        
-    glDisable(GL_CULL_FACE);
-    
-    glViewport (0, 0, G_Width, G_Height);       
-    setProjection ((double)G_Width/G_Height);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt (getCameraPosition(0), getCameraPosition(1), getCameraPosition(2),
-         0.0, 0.0, 0.0,
-         0.0, 1.0, 0.0);
-    
-	if (!G_Help) {	
-		switch(G_ShowTexture) {
-			case 1:
-				drawTexturedQuad(G_ShaderTexture);
-				break;
-			case 0:
-				drawColoredQuad(G_ShaderColor, 0, 0, 1);
-				break;
-			case 2:
-				drawPosColoredQuad(G_ShaderPosColor);
-				break;
-		}
-	} else {
-		printHelp();
-	}
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(0.0, 1.0, 1.0, 0.0);
+	glClearDepth(1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	drawSceneToSpecificFramebuffer(G_fboCam, 1);
+	drawSceneToSpecificFramebuffer(0, 0);
+	//tellThemKidsWhatsGoingOn();
     
     glutSwapBuffers ();
-    
 }
 
 
@@ -347,7 +414,6 @@ void cbKeyboard (unsigned char key, int x, int y)
 		case 'Q':
 		case ESC:
 			exit(0);
-			break;_H:
 			break;
 		case 'h':
 		case 'H':
@@ -355,7 +421,7 @@ void cbKeyboard (unsigned char key, int x, int y)
 			break;
 		case 's':
 		case 'S':
-			G_ShowTexture = (G_ShowTexture + 1) % 3;
+			G_ShowTexture = (G_ShowTexture + 1) % 5;
 			break;    
 		
 	}
@@ -549,6 +615,44 @@ int loadTextureImage(Image * image, char * name, GLuint * tex) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->sizeX, image->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image->data);	
 }
 
+void allocateMemoryStuffDepth(GLuint * texID, GLuint * texID2, GLuint * fbo) {
+	
+	/**
+	 * Eine Textur erzeugen.
+	 */
+	glGenTextures(1, texID);
+	glBindTexture(GL_TEXTURE_2D, *texID);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, G_Width, G_Height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+	
+	/**
+	 * Die entsprechende Tiefentextur zur normalen.
+	 */
+	glGenTextures(1, texID2);
+	glBindTexture(GL_TEXTURE_2D, *texID2);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, G_Width, G_Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+	
+	/**
+	 * Framebufferobjekt erzeugen (Bildschirm ist auch quasi eins!)
+	 */
+	glGenFramebuffers(1, fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, *fbo);	
+	
+	/**
+	 * Die alle miteinander verheiraten. Also Textur und Framebuffer.
+	 */
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texID, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *texID2, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 /**
  * Initialisiert das Programm (inkl. I/O und OpenGL) und startet die
  * Ereignisbehandlung.
@@ -596,6 +700,7 @@ int initAndStartIO (char *title, int width, int height)
             G_ShaderTexture = loadShaders("textureVertexShader.vert", "textureFragmentShader.frag");
             G_ShaderColor = loadShaders("colorVertexShader.vert", "colorFragmentShader.frag");
             G_ShaderPosColor = loadShaders("posColorVertexShader.vert", "colorFragmentShader.frag");
+            G_ShaderDepthTexture = loadShaders("textureVertexShader.vert", "textureDepthFragmentShader.frag");
             
             printf ("--> Shader sind geladen.\n"); fflush(stdout);
             
@@ -613,6 +718,8 @@ int initAndStartIO (char *title, int width, int height)
             glBindBuffer(GL_ARRAY_BUFFER, G_ObjectsBuffer); 
             glBufferData(GL_ARRAY_BUFFER, sizeof(G_Objects)*sizeof(GLfloat), G_Objects, GL_STATIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
+            
+            allocateMemoryStuffDepth(&G_TexCamera, &G_TexCameraDepth, &G_fboCam);
             
             printf ("--> Initialisierung angeschlossen.\n"); fflush(stdout);
             
