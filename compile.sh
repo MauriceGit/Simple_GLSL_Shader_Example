@@ -7,6 +7,8 @@ echo " --> rm -rf $(ls -C *.o 2> /dev/null)"
 rm -rf *.o 2>/dev/null
 rm "$programName" 2>/dev/null
 
+paramters="-Wall -Wextra -Wno-unused-parameter -Werror -ansi -pedantic"
+
 # compile
 echo "compiling sources . . ."
 echo " --> gcc -I./ -c -o $(ls -C *.c 2>/dev/null)"

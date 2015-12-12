@@ -392,7 +392,6 @@ static void cbDisplay ()
 	
 	drawSceneToSpecificFramebuffer(G_fboCam, 1);
 	drawSceneToSpecificFramebuffer(0, 0);
-	//tellThemKidsWhatsGoingOn();
     
     glutSwapBuffers ();
 }
@@ -689,7 +688,6 @@ int initAndStartIO (char *title, int width, int height)
         /* Hintergrund und so werden initialisiert (Farben) */
         if (initScene ())
         {
-            int i;
             printf ("--> Shader laden...\n"); fflush(stdout);
             
             registerCallBacks ();
