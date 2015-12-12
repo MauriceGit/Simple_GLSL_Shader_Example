@@ -280,7 +280,7 @@ static void drawTexturedQuad(GLuint shader, GLuint texture) {
          */
         glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"),  1, GL_FALSE, &mp[0]);
         glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"),  1, GL_FALSE, &mv[0]);
-        
+
 		glEnable(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture);
