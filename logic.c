@@ -1,4 +1,6 @@
 /**
+ * Programmlogik soweit vorhanden. Im Endeffekt bleibt nicht viel, da wir kaum Logik haben.
+ * 
  * @author Maurice Tollmien. Github: MauriceGit
  */
 

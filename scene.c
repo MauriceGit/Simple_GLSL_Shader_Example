@@ -1,4 +1,7 @@
 /**
+ * Modul zum Zeichnen der Szene. Da wir das Meiste direkt mit den Buffern abbilden
+ * bleibt hier nichts mehr übrig außer ein bischen Licht und Wireframe.
+ * 
  * @author Maurice Tollmien. Github: MauriceGit
  */
 

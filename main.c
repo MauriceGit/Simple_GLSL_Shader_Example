@@ -1,4 +1,6 @@
 /**
+ * Einstieg in das gesamte Programm.
+ * 
  * @author Maurice Tollmien. Github: MauriceGit
  */
 

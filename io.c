@@ -1,4 +1,10 @@
 /**
+ * io.c ist zuständig für alles, was mit Screenbuffern, Texturen und Framebuffern
+ * zu tun hat.
+ * Da wir fast alles darauf reduziert haben, ist dieses Modul für das gesamte
+ * Zeichnen der Szene zuständig.
+ * Weiterhin für Bufferinitialisierungen, Texturladen und als Objekt verfügbar machen etc.
+ * 
  * @author Maurice Tollmien. Github: MauriceGit
  */
 
@@ -24,14 +30,8 @@
 /* Shader-ID's */
 GLuint G_ShaderColor, G_ShaderTexture, G_ShaderPosColor, G_ShaderDepthTexture;
 
-/* Shader-Variablen */
-GLuint G_Velocity_buffer_loc, G_Position_buffer_loc;
-Attractor G_Attractor;
-AttractorMass G_Attractor_Mass;
-GLuint G_Position_buffer_tex, G_Velocity_buffer_tex;
-
 /* Geometrie-Buffer */
-GLuint G_ObjectsBuffer, G_Compute_Buffers, G_Position_buffer, G_Velocity_buffer, G_Attractor_buffer, G_AttractorMass_buffer, G_Life_buffer;
+GLuint G_ObjectsBuffer;
 
 /* Textur */
 GLuint G_TexImageRocks, G_TexCamera, G_TexCameraDepth;
@@ -39,13 +39,10 @@ GLuint G_TexImageRocks, G_TexCamera, G_TexCameraDepth;
 /* Framebuffer-Objekte */
 GLuint G_fboCam;
 
-GLuint G_Dispatch_buffer;
-
 int G_ShowTexture = 0;
 
 int G_Width = 1920;
 int G_Height = 1080;
-int G_FullScreen = 1;
 char* G_WindowTitle = "";
 float G_Interval = 0;
 float G_ThisCallTime = 0;
@@ -349,6 +346,9 @@ void drawDemo(int renderToTexture) {
  * Rendert eine Szene nicht auf den Bildschirm sondern in eine Textur.
  */
 void drawSceneToSpecificFramebuffer(GLuint fbo, int renderToTexture) {
+	/**
+	 * Zeichnen in das übergebene Framebufferobjekt.
+	 */
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);	
 	if (renderToTexture) {
 		glClearColor(0.0, 0.8, 0.8, 0.0);
@@ -390,7 +390,14 @@ static void cbDisplay ()
 	glClearDepth(1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
+	/**
+	 * Zeichnen der Szene in das übergebene Frambuffer-Objekt und damit in die 
+	 * entsprechenden Texturen (Farbe + Tiefe)
+	 */
 	drawSceneToSpecificFramebuffer(G_fboCam, 1);
+	/**
+	 * Zeichnen der Szene in das Framebufferobjekt 0, als den Bildschirm.
+	 */
 	drawSceneToSpecificFramebuffer(0, 0);
     
     glutSwapBuffers ();
@@ -523,6 +530,9 @@ void registerCallBacks (void)
     
 }
 
+/**
+ * Böses böses gehacktes (aber gut funktionierendes) Laden von Daten aus einer Datei :)
+ */
 int readFile (char * name, GLchar ** buffer) {
     FILE *f = fopen(name, "rb");
     fseek(f, 0, SEEK_END);
@@ -598,12 +608,18 @@ GLuint loadShaders(char * vertexShader, char * fragmentShader){
 
 int loadTextureImage(Image * image, char * name, GLuint * tex) {
 	
+	/**
+	 * Bilddaten laden.
+	 */
 	if (!imageLoad(name, image)) 
 	{
 		printf("Error reading image file");
 		exit(1);
 	}        
 	
+	/**
+	 * Erstellung eines Texturobjektes für den übergebenen Identifier!
+	 */
 	glGenTextures(1, tex);
 	glBindTexture(GL_TEXTURE_2D, *tex);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -611,6 +627,7 @@ int loadTextureImage(Image * image, char * name, GLuint * tex) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	
+	/** Erstellen der Textur mit den Daten aus dem Bild! */
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->sizeX, image->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image->data);	
 }
 
@@ -625,6 +642,7 @@ void allocateMemoryStuffDepth(GLuint * texID, GLuint * texID2, GLuint * fbo) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+	/** Beachtet den Identifier: GL_RGBA8 und GL_BGRA zur Klassifizierung der Textur als normale Textur mit Farbwerten */
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, G_Width, G_Height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
 	
 	/**
@@ -636,6 +654,7 @@ void allocateMemoryStuffDepth(GLuint * texID, GLuint * texID2, GLuint * fbo) {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
+	/** Beachtet den Identifier: GL_DEPTH_COMPONENT zur Klassifizierung der Textur als Tiefentextur! */
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, G_Width, G_Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
 	
 	/**
@@ -646,6 +665,12 @@ void allocateMemoryStuffDepth(GLuint * texID, GLuint * texID2, GLuint * fbo) {
 	
 	/**
 	 * Die alle miteinander verheiraten. Also Textur und Framebuffer.
+	 * Die  Variable texID und texID2 entsprechen den Variablen, für die wir eben
+	 * die entsprechenden Texturen erzeugt haben.
+	 * 
+	 * Beachtet die jeweilige Unterscheidung bezüglich: 
+	 * GL_COLOR_ATTACHMENT0 (Normale Textur mit Farbwerten)
+	 * GL_DEPTH_ATTACHMENT  (Tiefentextur!)
 	 */
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texID, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *texID2, 0);
