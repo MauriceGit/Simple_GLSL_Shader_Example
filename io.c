@@ -46,6 +46,7 @@ int G_Height = 1080;
 char* G_WindowTitle = "";
 float G_Interval = 0;
 float G_ThisCallTime = 0;
+float G_NearPlane, G_FarPlane;
 
 int G_FPS_Count = 0;
 double G_FPS_All = 0;
@@ -153,8 +154,8 @@ setProjection (GLdouble aspect)
       /* perspektivische Projektion */
       gluPerspective (90.0,     /* Oeffnungswinkel */
                       aspect,   /* Seitenverhaeltnis */
-                      0.5,      /* nahe ClipPIEng-Ebene */
-                      50.0 /* ferne ClipPIEng-Ebene */ );
+                      G_NearPlane,      /* nahe ClipPIEng-Ebene */
+                      G_FarPlane /* ferne ClipPIEng-Ebene */ );
   }
 }
 
@@ -277,6 +278,11 @@ static void drawTexturedQuad(GLuint shader, GLuint texture) {
          */
         glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"),  1, GL_FALSE, &mp[0]);
         glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"),  1, GL_FALSE, &mv[0]);
+        
+        GLfloat nearPlane[] = {G_NearPlane};
+		glUniform1fv(glGetUniformLocation(shader, "nearPlane"), 1, nearPlane);
+		GLfloat farPlane[] = {G_FarPlane};
+		glUniform1fv(glGetUniformLocation(shader, "farPlane"), 1, farPlane);
 
 		glEnable(GL_TEXTURE_2D);
 		glActiveTexture(GL_TEXTURE0);
@@ -694,6 +700,9 @@ int initAndStartIO (char *title, int width, int height)
     G_WindowTitle = title;
     int argc = 1;
 	char *argv = "cmd";
+	
+	G_NearPlane = 0.5;
+    G_FarPlane  = 50.0;
     
 	/* Glut initialisieren */
 	glutInit (&argc, &argv);
