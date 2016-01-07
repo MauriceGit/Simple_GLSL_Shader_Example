@@ -1,4 +1,4 @@
-# OpenGL Shader-Tutorial Project
+# **OpenGL Shader-Tutorial Project**
 
 What you see here is a kind of pragmatic tutorial. There is no list of steps, what you have to do to accomplish some results.
 
@@ -10,7 +10,7 @@ of anything else --> here you get all the source-code and basics you need to do 
 With this kind of example-project I would have saved myself LOTS of hours some years ago.
 I created this as a tutorial for university. But I think one or another of you might appreciate it.
 
-## Knowledge Requirement
+## **Knowledge Requirement**
 
 If you are new to OpenGL or new to programming this is not the tutorial for you!
 What you need is a basic understanding of OpenGL and the rendering-pipeline.
@@ -19,7 +19,7 @@ Also you know how to initialize buffers, allocate memory and generally handle an
 So if you already build some smaller stuff with OpenGL and want to step your game up with some
 awesome shaders - this is exactly for you!
 
-## This is what you get
+## **This is what you get**
 
 You can toggle between five different modes. Each mode is very shortly explained on the screen itself,
 so you know what you are looking at.
