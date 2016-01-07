@@ -1,10 +1,9 @@
 /**
- * io.c ist zuständig für alles, was mit Screenbuffern, Texturen und Framebuffern
- * zu tun hat.
- * Da wir fast alles darauf reduziert haben, ist dieses Modul für das gesamte
- * Zeichnen der Szene zuständig.
- * Weiterhin für Bufferinitialisierungen, Texturladen und als Objekt verfügbar machen etc.
- * 
+ * io.c is responsible for everything about screen-buffers, textures, framebuffers and buffers in general.
+ * Because there is pretty much no logic left here (cause this is a shader-demo not a game)
+ * there is not much (relevant) code anywhere else but here.
+ * Also all buffer-initializations, texture loading and similar stuff happens here.
+ *
  * @author Maurice Tollmien. Github: MauriceGit
  */
 
@@ -53,17 +52,16 @@ double G_FPS_All = 0;
 int G_Help = 0;
 
 GLfloat G_Objects[] = {
-    -10.0, -10.0, -10.0, 	0.1, 0.0,
-     10.0, -10.0, -10.0, 	1.0, 0.0,
-     10.0,  10.0, -10.0,	1.0, 1.0,
-    -10.0, -10.0, -10.0,	0.1, 0.0,
-     10.0,  10.0, -10.0,	1.0, 1.0,
-    -10.0,  10.0, -10.0,	0.1, 1.0
+    -10.0, -10.0, -10.0,    0.1, 0.0,
+     10.0, -10.0, -10.0,    1.0, 0.0,
+     10.0,  10.0, -10.0,    1.0, 1.0,
+    -10.0, -10.0, -10.0,    0.1, 0.0,
+     10.0,  10.0, -10.0,    1.0, 1.0,
+    -10.0,  10.0, -10.0,    0.1, 1.0
 };
 
 /**
- * Wird aufgerufen, wenn "h" gedrückt worden ist.
- * Gibt einen Text auf einem schwarzen Hintergrund auf dem Bildschirm aus
+ * Prints text on the screen.
  */
 void printHelp (void)
 {
@@ -83,130 +81,120 @@ void printHelp (void)
 
 
 void tellThemKidsWhatsGoingOn(void) {
-	GLfloat textColor[3] = { 0.0f, 0.0f, 0.0f };
-	switch (G_ShowTexture) {
-		case 0:
-			drawString (0.2f, 0.1f, textColor, "Die Flaeche wird im Shader einfarbig eingefaerbt.");
-			break;
-		case 1:
-			drawString (0.2f, 0.1f, textColor,  "Die Position eines Vertices im Raum wird jeweils auf den Bereich 0..1 gemappt und ");
-			drawString (0.2f, 0.12f, textColor, "im Fragmentshader als Farb-Komponente verwendet. Quasi eine Visualisierung von Koordinaten.");
-			break;
-		case 2:
-			drawString (0.2f, 0.1f, textColor, "Eine Textur wird aus einer Bild-Datei geladen und im Shader auf die Flaeche gemappt.");
-			break;
-		case 3:
-			drawString (0.2f, 0.1f, textColor, "Die Szene mit der Bild-Textur wird in ein neues Framebufferobjekt gerendert, welche");
-			drawString (0.2f, 0.12f, textColor, "an eine Textur gebunden wird. Also wird quasi in eine Textur gerendert statt auf den ");
-			drawString (0.2f, 0.14f, textColor, "Bildschirm. Diese Textur aus der aktuellen Szene wird nun auf die Flaeche gemappt.");
-			break;
-		case 4:
-			drawString (0.2f, 0.1f, textColor, "Die Szene mit der Bild-Textur wird in ein neues Framebufferobjekt gerendert, in dem");
-			drawString (0.2f, 0.12f, textColor, "Fall aber nicht als normale Textur sondern als Tiefenmap der Szene aus Sicht der");
-			drawString (0.2f, 0.14f, textColor, "Kamera. Diese Tiefenmap wird im Fragmentshader normalisiert und als Grauwert betrachtet");
-			drawString (0.2f, 0.16f, textColor, "genutzt, um die jeweiligen Fragments entsprechend ihrer Tiefe in der Szene einzufaerben.");
-			break;
-	}
+    GLfloat textColor[3] = { 0.0f, 0.0f, 0.0f };
+    switch (G_ShowTexture) {
+        case 0:
+            drawString (0.2f, 0.1f, textColor, "The area is plain-colored in the shader.");
+            break;
+        case 1:
+            drawString (0.2f, 0.1f, textColor, "The 3d-positions will be mapped to a range of 0..1 and interpreted as RGB-color values in");
+            drawString (0.2f, 0.12f, textColor, "the fragment shader. It basically shows coordinates as colores.");
+            break;
+        case 2:
+            drawString (0.2f, 0.1f, textColor, "A texture is loaded from an image and mapped onto the area.");
+            break;
+        case 3:
+            drawString (0.2f, 0.1f, textColor, "The scene with the image-texture is rendered into a new framebuffer-object.");
+            drawString (0.2f, 0.12f, textColor, "This framebuffer-object is bound to a texture-object. So we basically render into a texture.");
+            drawString (0.2f, 0.14f, textColor, "This texture is then rendered onto the actual area in the current scene.");
+            break;
+        case 4:
+            drawString (0.2f, 0.1f, textColor, "The scene with the image-texture is rendered into a new framebuffer-object.");
+            drawString (0.2f, 0.12f, textColor, "In this case not as a color-texture, but a depth-texture from the view of the camera.");
+            drawString (0.2f, 0.14f, textColor, "The values of the depth-texture then get normalized (in the fragment-shader) and used");
+            drawString (0.2f, 0.16f, textColor, "as color value. So we see now as grey-values how far we are away from objects in the scene.");
+            break;
+    }
 }
 
 /**
- * Timer-Callback.
- * Initiiert Berechnung der aktuellen Position und Farben und anschliessendes
- * Neuzeichnen, setzt sich selbst erneut als Timer-Callback.
- * @param lastCallTime Zeitpunkt, zu dem die Funktion als Timer-Funktion
- *   registriert wurde (In).
+ * Timer-Callback
+ * Initializes the timer and calls the redisplay of the scene.
  */
 void cbTimer (int lastCallTime)
 {
-    
-    /* Seit dem Programmstart vergangene Zeit in Millisekunden */
-	int thisCallTime = glutGet (GLUT_ELAPSED_TIME);
-    
-	/* Seit dem letzten Funktionsaufruf vergangene Zeit in Sekunden */
-	double interval = (double) (thisCallTime - lastCallTime) / 1000.0f;
-		
-	calcTimeRelatedStuff(interval);
-			
-	/* Wieder als Timer-Funktion registrieren */
-	glutTimerFunc (1000 / TIMER_CALLS_PS, cbTimer, thisCallTime);
+    /* Time since program start. */
+    int thisCallTime = glutGet (GLUT_ELAPSED_TIME);
 
-	/* Neuzeichnen anstossen */
-	glutPostRedisplay ();
+    /* Time since last call */
+    double interval = (double) (thisCallTime - lastCallTime) / 1000.0f;
+
+    calcTimeRelatedStuff(interval);
+
+    /* Register itself as timer for the next time */
+    glutTimerFunc (1000 / TIMER_CALLS_PS, cbTimer, thisCallTime);
+
+    /* Re-display */
+    glutPostRedisplay ();
 }
 
 /**
- * Setzen der Projektionsmatrix.
- * Setzt die Projektionsmatrix unter Berücksichtigung des Seitenverhaeltnisses
- * des Anzeigefensters, sodass das Seitenverhaeltnisse der Szene unveraendert
- * bleibt und gleichzeitig entweder in x- oder y-Richtung der Bereich von -1
- * bis +1 zu sehen ist.
- * @param aspect Seitenverhaeltnis des Anzeigefensters (In).
+ * Sets the projection-matrix with the given aspect ratio for the window.
  */
 static void
 setProjection (GLdouble aspect)
 {
-  /* Nachfolgende Operationen beeinflussen Projektionsmatrix */
   glMatrixMode (GL_PROJECTION);
-  /* Matrix zuruecksetzen - Einheitsmatrix laden */
+  /* Load identity matrix and reset. */
   glLoadIdentity ();
-    
+
   {
-      /* perspektivische Projektion */
-      gluPerspective (90.0,     /* Oeffnungswinkel */
-                      aspect,   /* Seitenverhaeltnis */
-                      G_NearPlane,      /* nahe ClipPIEng-Ebene */
-                      G_FarPlane /* ferne ClipPIEng-Ebene */ );
+      /* perspective projection */
+      gluPerspective (90.0,     /* opening angle */
+                      aspect,   /* aspect ratio */
+                      G_NearPlane,      /* near clipping plane */
+                      G_FarPlane /* far clipping plane */ );
   }
 }
 
 
 static void drawColoredQuad(GLuint shader, double r, double g, double b) {
     glDisable(GL_CULL_FACE);
-    
+
     /*
-     * Hier dem Programm sagen, welchen (und ob) Shader es für die folgenden Zeichenoperationen nutzen soll.
-     * Die Einrückung ist nur zur Verdeutlichung, in welchem Bereich der Shader angewendet wird.
+     * Tells the program if and which shader to use for the following drawing operations.
+     * The intention is just for showing where the shader is going to be active.
      */
     glUseProgram(shader);
-    
+
         /*
-         * View- und Projektionsmatrix auslesen für den Vertex-Shader festlegen.
+         * Read view and projection matrix for the vertex-shader
          */
         GLfloat mp[16], mv[16];
         glGetFloatv(GL_PROJECTION_MATRIX, mp);
         glGetFloatv(GL_MODELVIEW_MATRIX, mv);
-        
-        /* 
-         * Über die Identifier 'projMatrix' und 'viewMatrix' können die Matrizen im Shader zugegriffen werden! 
+
+        /*
+         * With the identifiers 'projMatrix' and 'viewMatrix' the matrices can now be accessed in the shader
          */
         glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"),  1, GL_FALSE, &mp[0]);
         glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"),  1, GL_FALSE, &mv[0]);
-			
+
         /*
-         * Festlegen der Farbe, welche im Shader auf das zu zeichnende Objekt angewandt werden soll.
+         * Color for the object (will be colored in the shader)
          */
         GLfloat color[] = {r, g, b};
         glUniform3fv(glGetUniformLocation(shader, "colorIn"), 1, color);
-        
-        /* 
-         * Vertex-Buffer zum Rendern des im Buffer festgelegten Objektes! 
+
+        /*
+         * Vertex-buffer for rendering purposes of the objects in the buffer.
          */
         glBindBuffer (GL_ARRAY_BUFFER, G_ObjectsBuffer);
-        /* 
-         * Über die festgelegte Location (location = 0) kann der G_ObjectsBuffer im Shader zugegriffen werden 
+        /*
+         * With the location (location = 0) the G_ObjectsBuffer can now be accessed in the shader!
          */
         int shaderPos = 0;
         glEnableVertexAttribArray(shaderPos);
         glVertexAttribPointer(shaderPos, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
-        
-        
-        /* 
-         * Ganz normal zeichnen, wie vorher auch! Mit dem Unterschied, dass jetzt der Shader in der Pipeline 
-         * hängt und auf die Vertices/Fragments angewandt wird. 
+
+
+        /*
+         * Just normal drawing of the triangles (in this case). The only difference is, that now the shader is in
+         * the pipeline and will work on the vertices/fragments.
          */
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(shaderPos);
-        
+
         glBindBuffer (GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glEnable(GL_CULL_FACE);
@@ -214,44 +202,44 @@ static void drawColoredQuad(GLuint shader, double r, double g, double b) {
 
 static void drawPosColoredQuad(GLuint shader) {
     glDisable(GL_CULL_FACE);
-    
+
     /*
-     * Hier dem Programm sagen, welchen (und ob) Shader es für die folgenden Zeichenoperationen nutzen soll.
-     * Die Einrückung ist nur zur Verdeutlichung, in welchem Bereich der Shader angewendet wird.
+     * Tells the program if and which shader to use for the following drawing operations.
+     * The intention is just for showing where the shader is going to be active.
      */
     glUseProgram(shader);
-    
+
         /*
-         * View- und Projektionsmatrix auslesen für den Vertex-Shader festlegen.
+         * Read view and projection matrix for the vertex-shader
          */
         GLfloat mp[16], mv[16];
         glGetFloatv(GL_PROJECTION_MATRIX, mp);
         glGetFloatv(GL_MODELVIEW_MATRIX, mv);
-        
-        /* 
-         * Über die Identifier 'projMatrix' und 'viewMatrix' können die Matrizen im Shader zugegriffen werden! 
+
+        /*
+         * With the identifiers 'projMatrix' and 'viewMatrix' the matrices can now be accessed in the shader
          */
         glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"),  1, GL_FALSE, &mp[0]);
         glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"),  1, GL_FALSE, &mv[0]);
-			        
-        /* 
-         * Vertex-Buffer zum Rendern des im Buffer festgelegten Objektes! 
+
+        /*
+         * Vertex-buffer for rendering purposes of the objects in the buffer.
          */
         glBindBuffer (GL_ARRAY_BUFFER, G_ObjectsBuffer);
-        /* 
-         * Über die festgelegte Location (location = 0) kann der G_ObjectsBuffer im Shader zugegriffen werden 
+        /*
+         * With the location (location = 0) the G_ObjectsBuffer can now be accessed in the shader!
          */
         int shaderPos = 0;
         glEnableVertexAttribArray(shaderPos);
         glVertexAttribPointer(shaderPos, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
-        
-        /* 
-         * Ganz normal zeichnen, wie vorher auch! Mit dem Unterschied, dass jetzt der Shader in der Pipeline 
-         * hängt und auf die Vertices/Fragments angewandt wird. 
+
+        /*
+         * Just normal drawing of the triangles (in this case). The only difference is, that now the shader is in
+         * the pipeline and will work on the vertices/fragments.
          */
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(shaderPos);
-        
+
         glBindBuffer (GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glEnable(GL_CULL_FACE);
@@ -259,196 +247,192 @@ static void drawPosColoredQuad(GLuint shader) {
 
 static void drawTexturedQuad(GLuint shader, GLuint texture) {
     glDisable(GL_CULL_FACE);
-    
+
     /*
-     * Hier dem Programm sagen, welchen (und ob) Shader es für die folgenden Zeichenoperationen nutzen soll.
-     * Die Einrückung ist nur zur Verdeutlichung, in welchem Bereich der Shader angewendet wird.
+     * Tells the program if and which shader to use for the following drawing operations.
+     * The intention is just for showing where the shader is going to be active.
      */
     glUseProgram(shader);
-    
+
         /*
-         * View- und Projektionsmatrix auslesen für den Vertex-Shader festlegen.
+         * Read view and projection matrix for the vertex-shader
          */
         GLfloat mp[16], mv[16];
         glGetFloatv(GL_PROJECTION_MATRIX, mp);
         glGetFloatv(GL_MODELVIEW_MATRIX, mv);
-        
-        /* 
-         * Über die Identifier 'projMatrix' und 'viewMatrix' können die Matrizen im Shader zugegriffen werden! 
+
+        /*
+         * With the identifiers 'projMatrix' and 'viewMatrix' the matrices can now be accessed in the shader
          */
         glUniformMatrix4fv(glGetUniformLocation(shader, "projMatrix"),  1, GL_FALSE, &mp[0]);
         glUniformMatrix4fv(glGetUniformLocation(shader, "viewMatrix"),  1, GL_FALSE, &mv[0]);
-        
-        GLfloat nearPlane[] = {G_NearPlane};
-		glUniform1fv(glGetUniformLocation(shader, "nearPlane"), 1, nearPlane);
-		GLfloat farPlane[] = {G_FarPlane};
-		glUniform1fv(glGetUniformLocation(shader, "farPlane"), 1, farPlane);
 
-		glEnable(GL_TEXTURE_2D);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
-		glUniform1i(glGetUniformLocation(shader, "texsampler"), 0);
-        
-        /* 
-         * Vertex-Buffer zum Rendern des im Buffer festgelegten Objektes! 
+        GLfloat nearPlane[] = {G_NearPlane};
+        glUniform1fv(glGetUniformLocation(shader, "nearPlane"), 1, nearPlane);
+        GLfloat farPlane[] = {G_FarPlane};
+        glUniform1fv(glGetUniformLocation(shader, "farPlane"), 1, farPlane);
+
+        glEnable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(glGetUniformLocation(shader, "texsampler"), 0);
+
+        /*
+         * Vertex-buffer for rendering purposes of the objects in the buffer.
          */
         glBindBuffer (GL_ARRAY_BUFFER, G_ObjectsBuffer);
-        /* 
-         * Über die festgelegte Location (location = 0) kann der G_ObjectsBuffer im Shader zugegriffen werden 
+        /*
+         * With the location (location = 0) (or = 1 for tex-pos) the G_ObjectsBuffer can now be accessed in the shader!
          */
         int shaderPos = 0;
         glEnableVertexAttribArray(shaderPos);
         glVertexAttribPointer(shaderPos, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
-        
+
         int shaderPosTex = 1;
         glEnableVertexAttribArray(shaderPosTex);
         glVertexAttribPointer(shaderPosTex, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*) (3*sizeof(GLfloat)));
-        
-        
-        /* 
-         * Ganz normal zeichnen, wie vorher auch! Mit dem Unterschied, dass jetzt der Shader in der Pipeline 
-         * hängt und auf die Vertices/Fragments angewandt wird. 
+
+
+        /*
+         * Just normal drawing of the triangles (in this case). The only difference is, that now the shader is in
+         * the pipeline and will work on the vertices/fragments.
          */
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glDisableVertexAttribArray(0);
         glDisableVertexAttribArray(1);
         glDisable(GL_TEXTURE_2D);
-        
+
         glBindBuffer (GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glEnable(GL_CULL_FACE);
 }
 
 void drawDemo(int renderToTexture) {
-	if (!G_Help) {	
-		if (!renderToTexture) {
-			switch(G_ShowTexture) {
-				case 0:
-					drawColoredQuad(G_ShaderColor, 0, 0, 1);
-					break;
-				case 1:
-					drawPosColoredQuad(G_ShaderPosColor);
-					break;
-				case 2:
-					drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
-					break;
-				case 3:
-					drawTexturedQuad(G_ShaderTexture, G_TexCamera);
-					break;
-				case 4:
-					drawTexturedQuad(G_ShaderDepthTexture, G_TexCameraDepth);
-					break;
-			}
-		} else {
-			drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
-		}
-		tellThemKidsWhatsGoingOn();
-	} else {
-		printHelp();
-	}
+    if (!G_Help) {
+        if (!renderToTexture) {
+            switch(G_ShowTexture) {
+                case 0:
+                    drawColoredQuad(G_ShaderColor, 0, 0, 1);
+                    break;
+                case 1:
+                    drawPosColoredQuad(G_ShaderPosColor);
+                    break;
+                case 2:
+                    drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
+                    break;
+                case 3:
+                    drawTexturedQuad(G_ShaderTexture, G_TexCamera);
+                    break;
+                case 4:
+                    drawTexturedQuad(G_ShaderDepthTexture, G_TexCameraDepth);
+                    break;
+            }
+        } else {
+            drawTexturedQuad(G_ShaderTexture, G_TexImageRocks);
+        }
+        tellThemKidsWhatsGoingOn();
+    } else {
+        printHelp();
+    }
 }
 
 /**
- * Rendert eine Szene nicht auf den Bildschirm sondern in eine Textur.
+ * Renders a scene not to the screen but into a texture
  */
 void drawSceneToSpecificFramebuffer(GLuint fbo, int renderToTexture) {
-	/**
-	 * Zeichnen in das übergebene Framebufferobjekt.
-	 */
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);	
-	if (renderToTexture) {
-		glClearColor(0.0, 0.8, 0.8, 0.0);
-	} else {
-		glClearColor(0.0, 1.0, 1.0, 0.0);
-	}
-	glClearDepth(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	glDisable(GL_CULL_FACE);
-	glViewport (0, 0, G_Width, G_Height);	
-	setProjection ((double)G_Width/G_Height);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt (getCameraPosition(0), getCameraPosition(1), getCameraPosition(2),
+    /**
+     * Drawing into the given framebuffer-object
+     */
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    if (renderToTexture) {
+        glClearColor(0.0, 0.8, 0.8, 0.0);
+    } else {
+        glClearColor(0.0, 1.0, 1.0, 0.0);
+    }
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glDisable(GL_CULL_FACE);
+    glViewport (0, 0, G_Width, G_Height);
+    setProjection ((double)G_Width/G_Height);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt (getCameraPosition(0), getCameraPosition(1), getCameraPosition(2),
          0.0, 0.0, 0.0,
          0.0, 1.0, 0.0);
-	
-	glDisable(GL_TEXTURE_2D);
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		printf ("Framebuffer ist nicht korrekt! 4\n");
-	}
 
-	drawDemo(renderToTexture);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}	
+    glDisable(GL_TEXTURE_2D);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        printf ("Framebuffer is not correct!\n");
+    }
+
+    drawDemo(renderToTexture);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
 /**
- * Zeichen-Callback.
- * Loescht die Buffer, ruft das Zeichnen der Szene auf und tauscht den Front-
- * und Backbuffer.
+ * Drawing-callback.
+ * Deletes the buffer, calls the drawing routines of the scene and
+ * switches front- and backbuffer (double-buffering).
  */
 static void cbDisplay ()
 {
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClearColor(0.0, 1.0, 1.0, 0.0);
-	glClearDepth(1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	/**
-	 * Zeichnen der Szene in das übergebene Frambuffer-Objekt und damit in die 
-	 * entsprechenden Texturen (Farbe + Tiefe)
-	 */
-	drawSceneToSpecificFramebuffer(G_fboCam, 1);
-	/**
-	 * Zeichnen der Szene in das Framebufferobjekt 0, als den Bildschirm.
-	 */
-	drawSceneToSpecificFramebuffer(0, 0);
-    
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0, 1.0, 1.0, 0.0);
+    glClearDepth(1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    /**
+     * Drawing the scene into the given framebuffer-object and so basically into the texture.
+     * (Color and depth. Both attached to the same framebuffer-object)
+     */
+    drawSceneToSpecificFramebuffer(G_fboCam, 1);
+    /**
+     * Drawing the scene onto the screen.
+     */
+    drawSceneToSpecificFramebuffer(0, 0);
+
     glutSwapBuffers ();
 }
 
 
 
 /**
- * Callback fuer Tastendruck.
- * Ruft Ereignisbehandlung fuer Tastaturereignis auf.
- * @param key betroffene Taste (In).
- * @param x x-Position der Maus zur Zeit des Tastendrucks (In).
- * @param y y-Position der Maus zur Zeit des Tastendrucks (In).
+ * Callback for keyboard.
  */
 void cbKeyboard (unsigned char key, int x, int y)
 {
-	switch (key)
-	{
-		case 'q':
-		case 'Q':
-		case ESC:
-			exit(0);
-			break;
-		case 'h':
-		case 'H':
-			G_Help = !G_Help;
-			break;
-		case 's':
-		case 'S':
-			G_ShowTexture = (G_ShowTexture + 1) % 5;
-			break;    
-		
-	}
-    
+    switch (key)
+    {
+        case 'q':
+        case 'Q':
+        case ESC:
+            exit(0);
+            break;
+        case 'h':
+        case 'H':
+            G_Help = !G_Help;
+            break;
+        case 's':
+        case 'S':
+            G_ShowTexture = (G_ShowTexture + 1) % 5;
+            break;
+
+    }
+
 }
 
 void cbSpecial (int key, int x, int y)
 {
-	switch (key)
-	{
-		case GLUT_KEY_F1:
+    switch (key)
+    {
+        case GLUT_KEY_F1:
             toggleWireframeMode();
-			break;
-        
-	}
+            break;
+
+    }
 }
 
 void
@@ -478,66 +462,66 @@ handleMouseEvent (int x, int y, CGMouseEventType eventType, int button, int butt
 
 void cbMouseButton (int button, int state, int x, int y)
 {
-	handleMouseEvent (x, y, mouseButton, button, state);
+    handleMouseEvent (x, y, mouseButton, button, state);
 }
 
 void cbMouseMotion (int x, int y)
-{    
+{
     if (getMouseEvent() == MOVE)
         setCameraMovement(x,y);
-    
+
     if (getMouseEvent() == ZOOM)
         setCameraZoom(x,y);
-    
+
     setMouseCoord(x,y);
 }
 
 
 /**
- * Callback fuer Aenderungen der Fenstergroesse.
- * Initiiert Anpassung der Projektionsmatrix an veraenderte Fenstergroesse.
- * @param w Fensterbreite (In).
- * @param h Fensterhoehe (In).
+ * Callback for changes in the window-size.
+ * Initiate the change of the projection-matrix to the windowsize.
+ * @param w screen-width
+ * @param h screen-height.
  */
 void cbReshape (int w, int h)
 {
-  /* Das ganze Fenster ist GL-Anzeigebereich */
+  /* Whole screen is relevant. */
   glViewport (0, 0, (GLsizei) w, (GLsizei) h);
 
-  /* Anpassen der Projektionsmatrix an das Seitenverhaeltnis des Fensters */
+  /* Adjust of the projection-matrix to the new aspect-ratio */
   setProjection ((GLdouble) w / (GLdouble) h);
 }
 
 
 
 /**
- * Registrierung der GLUT-Callback-Routinen.
+ * Register the GLUT-Callback-routines.
  */
 void registerCallBacks (void)
 {
-	
+
     glutMotionFunc(cbMouseMotion);
     glutMouseFunc (cbMouseButton);
-    
-    /* Timer-Callback - wird einmalig nach msescs Millisekunden ausgefuehrt */
-	glutTimerFunc (1000 / TIMER_CALLS_PS, /* msecs - bis Aufruf von func */
-                 cbTimer,       /* func  - wird aufgerufen    */
-                 glutGet (GLUT_ELAPSED_TIME));  /* value - Parameter, mit dem
-                                                   func aufgerufen wird */
-    
+
+    /* Timer-Callback */
+    glutTimerFunc (1000 / TIMER_CALLS_PS,
+                 cbTimer,
+                 glutGet (GLUT_ELAPSED_TIME));
+
+
     glutReshapeFunc (cbReshape);
     glutDisplayFunc (cbDisplay);
-    
+
     glutKeyboardFunc (cbKeyboard);
     glutSpecialFunc (cbSpecial);
-    
+
     glutIgnoreKeyRepeat (1);
-    
-    
+
+
 }
 
 /**
- * Böses böses gehacktes (aber gut funktionierendes) Laden von Daten aus einer Datei :)
+ * Very very very evil file-load-hacking (but working :P) ;)
  */
 int readFile (char * name, GLchar ** buffer) {
     FILE *f = fopen(name, "rb");
@@ -552,214 +536,209 @@ int readFile (char * name, GLchar ** buffer) {
 }
 
 GLuint loadShaders(char * vertexShader, char * fragmentShader){
- 
+
     /* Create the shaders */
     GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
- 
+
     GLint Result = GL_FALSE;
     int InfoLogLength;
- 
+
     /* Compile Vertex Shader */
     printf("Compiling Vertex shader\n");
     char * VertexSourcePointer = NULL;
     readFile(vertexShader, &VertexSourcePointer);
-    
+
     glShaderSource(VertexShaderID, 1, (const GLchar **)&VertexSourcePointer , NULL);
     glCompileShader(VertexShaderID);
- 
+
     /* Check Vertex Shader */
     glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
     glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
     char * vertexShaderErrorMessage = calloc(InfoLogLength, sizeof(char));
     glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &(vertexShaderErrorMessage[0]));
     fprintf(stdout, "vertexShaderErrorMessage: %s\n", vertexShaderErrorMessage);
- 
+
     /* Compile Fragment Shader */
     printf("Compiling Fragment shader\n");
     char * FragmentSourcePointer = NULL;
     readFile(fragmentShader, &FragmentSourcePointer);
-    
+
     glShaderSource(FragmentShaderID, 1, (const GLchar **)&FragmentSourcePointer , NULL);
     glCompileShader(FragmentShaderID);
- 
+
     /* Check Fragment Shader */
     glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
     glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
     char * fragmentShaderErrorMessage = calloc(InfoLogLength, sizeof(char));
     glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &(fragmentShaderErrorMessage[0]));
     fprintf(stdout, "fragmentShaderErrorMessage: %s\n", fragmentShaderErrorMessage);
- 
+
     /*  Link the program */
     GLuint ProgramID = glCreateProgram();
-    
+
     glAttachShader(ProgramID, VertexShaderID);
-    
+
     glAttachShader(ProgramID, FragmentShaderID);
-    
+
     glLinkProgram(ProgramID);
-    
+
     /* Check the program */
     glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
     glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
     char * programErrorMessage = calloc(InfoLogLength, sizeof(char));
     glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &(programErrorMessage[0]));
     fprintf(stdout, "programErrorMessage: %s\n", programErrorMessage);
- 
+
     glDeleteShader(VertexShaderID);
     glDeleteShader(FragmentShaderID);
- 
+
     return ProgramID;
 }
 
 int loadTextureImage(Image * image, char * name, GLuint * tex) {
-	
-	/**
-	 * Bilddaten laden.
-	 */
-	if (!imageLoad(name, image)) 
-	{
-		printf("Error reading image file");
-		exit(1);
-	}        
-	
-	/**
-	 * Erstellung eines Texturobjektes für den übergebenen Identifier!
-	 */
-	glGenTextures(1, tex);
-	glBindTexture(GL_TEXTURE_2D, *tex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	/** Erstellen der Textur mit den Daten aus dem Bild! */
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->sizeX, image->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image->data);	
+
+    /**
+     * Load image-file
+     */
+    if (!imageLoad(name, image))
+    {
+        printf("Error reading image file");
+        exit(1);
+    }
+
+    /**
+     * Create Texture-object with the given identifier
+     */
+    glGenTextures(1, tex);
+    glBindTexture(GL_TEXTURE_2D, *tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    /** Create texture with the data from the image */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->sizeX, image->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image->data);
 }
 
 void allocateMemoryStuffDepth(GLuint * texID, GLuint * texID2, GLuint * fbo) {
-	
-	/**
-	 * Eine Textur erzeugen.
-	 */
-	glGenTextures(1, texID);
-	glBindTexture(GL_TEXTURE_2D, *texID);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
-	/** Beachtet den Identifier: GL_RGBA8 und GL_BGRA zur Klassifizierung der Textur als normale Textur mit Farbwerten */
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, G_Width, G_Height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
-	
-	/**
-	 * Die entsprechende Tiefentextur zur normalen.
-	 */
-	glGenTextures(1, texID2);
-	glBindTexture(GL_TEXTURE_2D, *texID2);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
-	/** Beachtet den Identifier: GL_DEPTH_COMPONENT zur Klassifizierung der Textur als Tiefentextur! */
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, G_Width, G_Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
-	
-	/**
-	 * Framebufferobjekt erzeugen (Bildschirm ist auch quasi eins!)
-	 */
-	glGenFramebuffers(1, fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, *fbo);	
-	
-	/**
-	 * Die alle miteinander verheiraten. Also Textur und Framebuffer.
-	 * Die  Variable texID und texID2 entsprechen den Variablen, für die wir eben
-	 * die entsprechenden Texturen erzeugt haben.
-	 * 
-	 * Beachtet die jeweilige Unterscheidung bezüglich: 
-	 * GL_COLOR_ATTACHMENT0 (Normale Textur mit Farbwerten)
-	 * GL_DEPTH_ATTACHMENT  (Tiefentextur!)
-	 */
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texID, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *texID2, 0);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    /**
+     * Create texture
+     */
+    glGenTextures(1, texID);
+    glBindTexture(GL_TEXTURE_2D, *texID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    /** Observe the values: GL_RGBA8 and GL_BGRA for classification of the texture as a color-texture */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, G_Width, G_Height, 0, GL_BGRA, GL_UNSIGNED_BYTE, NULL);
+
+    /**
+     * Now the corresponding depth-texture
+     */
+    glGenTextures(1, texID2);
+    glBindTexture(GL_TEXTURE_2D, *texID2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    /** Observe the values: GL_DEPTH_COMPONENT for classification as depth-texture */
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, G_Width, G_Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL);
+
+    /**
+     * Create framebuffer-object
+     */
+    glGenFramebuffers(1, fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, *fbo);
+
+    /**
+     * OK, now we marry the texture and the framebuffer with each other.
+     * See the corresponding variables: texID and texID2 and the type of attachment
+     *
+     * Observe the difference:
+     * GL_COLOR_ATTACHMENT0 (normal color-texture)
+     * GL_DEPTH_ATTACHMENT  (depth-texture)
+     */
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *texID, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *texID2, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /**
- * Initialisiert das Programm (inkl. I/O und OpenGL) und startet die
- * Ereignisbehandlung.
- * @param title Beschriftung des Fensters
- * @param width Breite des Fensters
- * @param height Hoehe des Fensters
- * @return ID des erzeugten Fensters, 0 im Fehlerfall
+ * Initializes the program (including io and OpenGL) and starts the
+ * event handling.
  */
 int initAndStartIO (char *title, int width, int height)
 {
-	int windowID = 0;
-        
+    int windowID = 0;
+
     G_Width = width;
     G_Height = height;
     G_WindowTitle = title;
     int argc = 1;
-	char *argv = "cmd";
-	
-	G_NearPlane = 0.5;
+    char *argv = "cmd";
+
+    G_NearPlane = 0.5;
     G_FarPlane  = 50.0;
-    
-	/* Glut initialisieren */
-	glutInit (&argc, &argv);
-	
-	/* FensterInitialisierung */
-	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-	/* FensterGröße */
-	glutInitWindowSize (G_Width, G_Height);
-	/* FensterPosition */
-	glutInitWindowPosition (0, 0);
-	
-	windowID = glutCreateWindow (G_WindowTitle);
-	
+
+    /* initialize GLUT */
+    glutInit (&argc, &argv);
+
+    /* initialize window */
+    glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    /* window size */
+    glutInitWindowSize (G_Width, G_Height);
+    /* window position */
+    glutInitWindowPosition (0, 0);
+
+    windowID = glutCreateWindow (G_WindowTitle);
+
     if (windowID)
-    {   
-        
-        /* Hintergrund und so werden initialisiert (Farben) */
+    {
+
+        /* Background color and other stuff initialization */
         if (initScene ())
         {
-            printf ("--> Shader laden...\n"); fflush(stdout);
-            
+            printf ("--> Load shaders...\n"); fflush(stdout);
+
             registerCallBacks ();
-            
+
             /*
-             * Shader aus Datei laden!
+             * Load shaders from file
              */
             G_ShaderTexture = loadShaders("textureVertexShader.vert", "textureFragmentShader.frag");
             G_ShaderColor = loadShaders("colorVertexShader.vert", "colorFragmentShader.frag");
             G_ShaderPosColor = loadShaders("posColorVertexShader.vert", "colorFragmentShader.frag");
             G_ShaderDepthTexture = loadShaders("textureVertexShader.vert", "textureDepthFragmentShader.frag");
-            
-            printf ("--> Shader sind geladen.\n"); fflush(stdout);
-            
+
+            printf ("--> Shaders are loaded.\n"); fflush(stdout);
+
             /*
-             * Texture aus Datei laden!
+             * Load texture from file
              */
             Image * imageRocks;
             imageRocks = malloc(sizeof(Image));
             loadTextureImage(imageRocks, "sunset-red.bmp", &G_TexImageRocks);
-            
+
             /*
-             * Buffer für die zu zeichnenden Objekte erzeugen.
+             * Create buffer for the object we want to draw.
              */
             glGenBuffers(1, &G_ObjectsBuffer);
-            glBindBuffer(GL_ARRAY_BUFFER, G_ObjectsBuffer); 
+            glBindBuffer(GL_ARRAY_BUFFER, G_ObjectsBuffer);
             glBufferData(GL_ARRAY_BUFFER, sizeof(G_Objects)*sizeof(GLfloat), G_Objects, GL_STATIC_DRAW);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
-            
+
             allocateMemoryStuffDepth(&G_TexCamera, &G_TexCameraDepth, &G_fboCam);
-            
-            printf ("--> Initialisierung angeschlossen.\n"); fflush(stdout);
-            
-            /* Die Endlosschleife wird angestoßen */
+
+            printf ("--> Finished Initialization.\n"); fflush(stdout);
+
+            /* Endless loop is started. */
             glutMainLoop ();
             windowID = 0;
-            
-            
+
+
         } else {
             glutDestroyWindow (windowID);
             return 0;
@@ -768,6 +747,6 @@ int initAndStartIO (char *title, int width, int height)
         return 0;
     }
     glutDestroyWindow (windowID);
-    
+
     return 1;
 }

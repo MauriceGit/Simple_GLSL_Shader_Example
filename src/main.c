@@ -1,10 +1,10 @@
 /**
- * Einstieg in das gesamte Programm.
- * 
+ * Program-Entry point
+ *
  * @author Maurice Tollmien. Github: MauriceGit
  */
 
-/* ---- System Header einbinden ---- */
+/* ---- System headers ---- */
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -14,28 +14,26 @@
 //#include <GLFW/glfw3.h>
 #include <GL/glut.h>
 
-/* ---- Eigene Header einbinden ---- */
+/* ---- Own headers ---- */
 #include "io.h"
-#include "scene.h" 
+#include "scene.h"
 #include "types.h"
 
 /**
- * Hauptprogramm.
- * Initialisiert Fenster, Anwendung und Callbacks, startet glutMainLoop.
- * @param argc Anzahl der Kommandozeilenparameter (In).
- * @param argv Kommandozeilenparameter (In).
- * @return Rueckgabewert im Fehlerfall ungleich Null.
+ * Main program and entry point.
+ * Initializes the window, callback and much more.
+ * All the magic is happening in io.c though :)
  */
 int
 main (int argc, char **argv)
 {
-	srand (time (0));
-	
-	if (!initAndStartIO ("Much shader such wow ... ", 1920, 1080))
-	{
-		fprintf (stderr, "Initialisierung fehlgeschlagen!\n");
-		return 1;
-	} 
-	
-	return 0;
+    srand (time (0));
+
+    if (!initAndStartIO ("Much shader such wow ... ", 1920, 1080))
+    {
+        fprintf (stderr, "Initialization went wrong\n");
+        return 1;
+    }
+
+    return 0;
 }

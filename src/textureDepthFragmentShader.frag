@@ -10,7 +10,7 @@ float linearizeDepth (float depth) {
 }
 
 //
-// Ganz normale Ansicht der jew. Tiefe.
+// Just normal respective depth-view
 //
 void main(){
   Color = vec4(linearizeDepth(texture(texsampler, texPos).x));
