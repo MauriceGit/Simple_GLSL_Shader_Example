@@ -1,23 +1,19 @@
-# **OpenGL Shader-Tutorial Project**
+# **OpenGL Shader Project**
 
-What you see here is a kind of pragmatic tutorial. There is no list of steps, what you have to do to accomplish some results.
+This project was part of a lecturing/tutorial for a computer graphics class at university.
 
-But what you get is a very simple and straight forward project with lots (LOTS) of comments.
+It consists of most of the OpenGL shader basics needed for further and more complex projects like Pathtracing and SSAO.
 
-So if you think about diving into shaders in OpenGL and you have some awesome ideas like Pathtracing or Screen-Space-Ambient-Occlusion
-of anything else --> here you get all the source-code and basics you need to do just that.
-
-With this kind of example-project I would have saved myself LOTS of hours some years ago.
-I created this as a tutorial for university. But I think one or another of you might appreciate it.
+With this kind of example-project I would have saved myself lots of hours some years ago.
 
 ## **Knowledge Requirement**
 
-If you are new to OpenGL or new to programming this is not the tutorial for you!
-What you need is a basic understanding of OpenGL and the rendering-pipeline.
+If you are completely new to OpenGL or new to programming this is not the tutorial for you!
+What you need is a basic understanding of OpenGL and the rendering pipeline.
 Also you know how to initialize buffers, allocate memory and generally handle and write C-code.
 
 So if you already build some smaller stuff with OpenGL and want to step your game up with some
-awesome shaders - this is exactly for you!
+ shaders - this is for you!
 
 ## **This is what you get**
 
@@ -38,19 +34,19 @@ so you know what you are looking at.
 
     ![Texture](https://github.com/MauriceGit/Simple_GLSL_Shader_Example/blob/master/Screenshots/texture.png "Shader with texture")
 
-- **Framebuffer-Texture**. The scene is rendered into a framebuffer-object which is bound to a texture-object. The texture is then
+- **Framebuffer-Texture**. The scene is rendered into a framebuffer object which is bound to a texture-object. The resulting texture is then
     mapped onto the object.
 
     ![fbo-texture](https://github.com/MauriceGit/Simple_GLSL_Shader_Example/blob/master/Screenshots/fbo_texture.png "Shader with framebuffer-object")
 
-- **Framebuffer-Depth-Texture**. The scene is rendered into a framebuffer-object which is bound to a depth-buffer-texture. The texture-values
+- **Framebuffer-Depth-Texture**. The scene is rendered into a framebuffer object which is bound to a depth-buffer-texture. The texture-values
     are then linearized and mapped onto the object. Showing grey values corresponding to the depth of the scene.
 
     ![fbo-depth-texture](https://github.com/MauriceGit/Simple_GLSL_Shader_Example/blob/master/Screenshots/depthbuffer_texture.png "Shader with framebuffer-object (depth)")
 
 ## **Install && Run**
 
-I only tested an ran this simulation on a debian-based unix OS (Ubuntu, Mint, ...). It should run on any other machine as well but is not
+I tested this simulation on a debian-based Linux OS (Ubuntu, Mint, ...). It should run on other machines as well but is not
 tested.
 
 ### **Requirements**
